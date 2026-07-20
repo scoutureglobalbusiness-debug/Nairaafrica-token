@@ -1,21 +1,51 @@
-const twilio = require('twilio');
-
-exports.handler = async (event) => {
-  const ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
-  const API_KEY = process.env.TWILIO_API_KEY;
-  const API_SECRET = process.env.TWILIO_API_SECRET;
-  const TWI_APP_SID = process.env.TWILIO_APP_SID;
-
-  const AccessToken = twilio.jwt.AccessToken;
-  const VoiceGrant = AccessToken.VoiceGrant;
-
-  const token = new AccessToken(ACCOUNT_SID, API_KEY, API_SECRET, {identity: 'user_' + Date.now()});
-  const grant = new VoiceGrant({outgoingApplicationSid: TWI_APP_SID});
-  token.addGrant(grant);
-
-  return {
-    statusCode: 200,
-    headers: { "Access-Control-Allow-Origin": "*" },
-    body: JSON.stringify({token: token.toJwt()}),
+exports.handler = async (event, context) => {
+  // CORS headers so your app can call it
+  const headers = {
+    'Access-Control-Allow-Origin': '*', // use your app domain in production
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
   };
+
+  // Handle preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
+  }
+
+  try {
+    const twilio = require('twilio');
+    const AccessToken = twilio.jwt.AccessToken;
+    const VoiceGrant = AccessToken.VoiceGrant;
+
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const apiKey = process.env.TWILIO_API_KEY;
+    const apiSecret = process.env.TWILIO_API_SECRET;
+    const appSid = process.env.TWILIO_APP_SID;
+
+    // Create an access token with a random identity
+    const identity = 'user-' + Math.random().toString(36).substr(2, 8);
+
+    const voiceGrant = new VoiceGrant({
+      outgoingApplicationSid: appSid,
+      incomingAllow: true,
+    });
+
+    const token = new AccessToken(accountSid, apiKey, apiSecret, { identity });
+    token.addGrant(voiceGrant);
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        token: token.toJwt(),
+        identity: identity
+      })
+    };
+
+  } catch (error) {
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: error.message })
+    };
+  }
 };
