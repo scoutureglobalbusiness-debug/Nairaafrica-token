@@ -16,7 +16,8 @@
     window.onload = async () => {
       const res = await fetch('/.netlify/functions/token');
       const data = await res.json();
-      Twilio.Device.setup(data.token, { codecPreferences: ["opus", "pcmu"] });
+      await Twilio.Device.setup(token, { debug: true });
+await navigator.mediaDevices.getUserMedia({ audio: true });
       document.getElementById('status').innerText = 'Ready to call ✅';
     };
 
