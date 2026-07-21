@@ -1,36 +1,58 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Call</title>
-    <style>body{text-align:center;padding:50px;font-family:Arial}</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NairaAfrica Calls</title>
+  <script src="https://media.twiliocdn.com/sdk/js/voice/v2.7/twilio.min.js"></script>
+  <style>
+    body { font-family: Arial; text-align: center; padding: 20px; background: #f2f2f2; }
+    #dialpad button { width: 60px; height: 60px; margin: 5px; font-size: 20px; border-radius: 50%; border: none; }
+    #number { font-size: 24px; padding: 10px; width: 200px; margin: 10px; }
+  </style>
 </head>
 <body>
-    <h2>📞 Make a Call</h2>
-    <input type="text" id="phoneNumber" placeholder="+23480XXXXXXXX">
-    <br><br>
-    <button onclick="makeCall()">Call Now</button>
-    <p id="status">Loading...</p>
+  <h2>NairaAfrica 📞</h2>
+  <p id="status">Loading...</p>
+  
+  <input type="text" id="number" placeholder="Enter number">
+  <div id="dialpad">
+    <button onclick="addDigit('1')">1</button><button onclick="addDigit('2')">2</button><button onclick="addDigit('3')">3</button><br>
+    <button onclick="addDigit('4')">4</button><button onclick="addDigit('5')">5</button><button onclick="addDigit('6')">6</button><br>
+    <button onclick="addDigit('7')">7</button><button onclick="addDigit('8')">8</button><button onclick="addDigit('9')">9</button><br>
+    <button onclick="addDigit('*')">*</button><button onclick="addDigit('0')">0</button><button onclick="addDigit('#')">#</button>
+  </div>
+  <button onclick="makeCall()" style="background:green; color:white; padding:15px 30px; border:none; border-radius:10px; margin:10px;">Call Now</button>
+  <button onclick="hangUp()" style="background:red; color:white; padding:15px 30px; border:none; border-radius:10px;">Hang Up</button>
 
-    <script src="https://media.twiliocdn.com/sdk/js/client/v1.14/twilio.min.js"></script>
-    <script>
+  <script>
+    let device;
+    let connection;
+
+    function addDigit(d) {
+      document.getElementById('number').value += d;
+    }
+
     window.onload = async () => {
       const res = await fetch('/.netlify/functions/token');
       const data = await res.json();
-      await Twilio.Device.setup(token, { debug: true });
-await navigator.mediaDevices.getUserMedia({ audio: true });
+      Twilio.Device.setup(data.token, { debug: true });
+      await navigator.mediaDevices.getUserMedia({ audio: true }); // mic permission
       document.getElementById('status').innerText = 'Ready to call ✅';
     };
 
-    async function makeCall() {
-      let number = document.getElementById('phoneNumber').value;
-      if(!number.startsWith('+')) number = '+234' + number;
-      document.getElementById('status').innerText = 'Calling...';
-      const params = { to: number };
-      const connection = Twilio.Device.connect(params);
-      connection.on('disconnect', () => {
-        document.getElementById('status').innerText = 'Call ended';
-      });
+    function makeCall() {
+      const number = document.getElementById('number').value;
+      connection = Twilio.Device.connect({ To: number });
     }
-    </script>
+
+    function hangUp() {
+      if (connection) connection.disconnect();
+    }
+
+    Twilio.Device.on('error', function (error) {
+      document.getElementById('status').innerText = 'Error: ' + error.message;
+    });
+  </script>
 </body>
 </html>
