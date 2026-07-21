@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Call</title>
+    <style>body{text-align:center;padding:50px;font-family:Arial}input{padding:12px;width:250px}button{padding:12px 20px;background:#0066ff;color:white;border:none}</style>
+  </head>
+  <body>
+    <h2>📞 Make a Call</h2>
+    <input type="text" id="phoneNumber" placeholder="+23480XXXXXXX">
+      <br>
+        <br>
+          <button onclick="makeCall()">Call Now</button>
+          <p id="status">Loading...</p>
+          <script src="https://sdk.twilio.com/js/client/v1.14/twilio.min.js"></script>
+          <script>window.onload = async () => {
+const res = await fetch('/.netlify/functions/token');
+const data = await res.json();
+Twilio.Device.setup(data.token, { codecPreferences: ["opus", "pcmu"] }); // <-- ADD THIS LINE
+document.getElementById('status').innerText = 'Ready to call ✅';
+};
+};
+async function makeCall() {
+  let number = document.getElementById('phoneNumber').value;
+  
+  // Auto add +234 for Nigeria if user types 8012345678
+  if(!number.startsWith('+')) number = '+234' + number;
+  
+  document.getElementById('status').innerText = 'Calling...';
+  
+  const params = { to: number };
+  const connection = Twilio.Device.connect(params); // <-- THIS IS THE KEY LINE
+
+  connection.on('disconnect', () => {
+    document.getElementById('status').innerText = 'Call ended';
+  });
+}
+</script>
+        </body>
+      </html>
