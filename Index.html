@@ -3,56 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NairaAfrica Calls</title>
-  <script src="https://media.twiliocdn.com/sdk/js/voice/v2.7/twilio.min.js"></script>
+  <title>Naira Africa Call</title>
   <style>
-    body { font-family: Arial; text-align: center; padding: 20px; background: #f2f2f2; }
-    #dialpad button { width: 60px; height: 60px; margin: 5px; font-size: 20px; border-radius: 50%; border: none; }
-    #number { font-size: 24px; padding: 10px; width: 200px; margin: 10px; }
+    body { font-family: Arial; padding: 20px; text-align: center; background: #f5f5f5; }
+    .card { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    input { padding: 12px; width: 90%; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+    button { padding: 14px 30px; background: #00a884; color: white; border: none; border-radius: 8px; font-size: 16px; width: 95%; font-weight: bold; }
+    button:active { background: #008f6f; }
+    #status { margin-top: 15px; color: #333; }
   </style>
 </head>
 <body>
-  <h2>NairaAfrica 📞</h2>
-  <p id="status">Loading...</p>
-  
-  <input type="text" id="number" placeholder="Enter number">
-  <div id="dialpad">
-    <button onclick="addDigit('1')">1</button><button onclick="addDigit('2')">2</button><button onclick="addDigit('3')">3</button><br>
-    <button onclick="addDigit('4')">4</button><button onclick="addDigit('5')">5</button><button onclick="addDigit('6')">6</button><br>
-    <button onclick="addDigit('7')">7</button><button onclick="addDigit('8')">8</button><button onclick="addDigit('9')">9</button><br>
-    <button onclick="addDigit('*')">*</button><button onclick="addDigit('0')">0</button><button onclick="addDigit('#')">#</button>
+  <div class="card">
+    <h2>Naira Africa</h2>
+    <input id="phone" type="tel" placeholder="Enter phone number e.g 0803..." />
+    <br>
+    <button id="callBtn">Call</button>
+    <p id="status"></p>
   </div>
-  <button onclick="makeCall()" style="background:green; color:white; padding:15px 30px; border:none; border-radius:10px; margin:10px;">Call Now</button>
-  <button onclick="hangUp()" style="background:red; color:white; padding:15px 30px; border:none; border-radius:10px;">Hang Up</button>
 
-  <script>
-    let device;
-    let connection;
+<script>
+const callBtn = document.getElementById('callBtn');
+const status = document.getElementById('status');
 
-    function addDigit(d) {
-      document.getElementById('number').value += d;
+callBtn.onclick = async () => {
+  try {
+    status.innerText = "Asking for microphone permission...";
+    
+    // THIS IS THE FIX: Ask for mic before calling
+    await navigator.mediaDevices.getUserMedia({ audio: true }); 
+    
+    status.innerText = "Microphone OK. Calling...";
+    const phone = document.getElementById('phone').value;
+    
+    if(!phone){
+      status.innerText = "Please enter a phone number";
+      return;
     }
-
-    window.onload = async () => {
-      const res = await fetch('/.netlify/functions/token');
-      const data = await res.json();
-      Twilio.Device.setup(data.token, { debug: true });
-      await navigator.mediaDevices.getUserMedia({ audio: true }); // mic permission
-      document.getElementById('status').innerText = 'Ready to call ✅';
-    };
-
-    function makeCall() {
-      const number = document.getElementById('number').value;
-      connection = Twilio.Device.connect({ To: number });
-    }
-
-    function hangUp() {
-      if (connection) connection.disconnect();
-    }
-
-    Twilio.Device.on('error', function (error) {
-      document.getElementById('status').innerText = 'Error: ' + error.message;
+    
+    // Call your backend function
+    const res = await fetch('/.netlify/functions/make-call', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({to: phone, userId: 'user123'})
     });
-  </script>
+    
+    const data = await res.json();
+    
+    if(data.success){
+      status.innerText = "Calling... " + data.callSid;
+    } else {
+      status.innerText = "Error: " + data.error;
+    }
+    
+  } catch(err) {
+    status.innerText = "Microphone permission denied. Please allow it in settings.";
+    console.error(err);
+  }
+}
+</script>
 </body>
 </html>
